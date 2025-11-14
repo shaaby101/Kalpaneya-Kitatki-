@@ -6,7 +6,6 @@
     <meta name="description" content="Kannada Library - Track and discover Kannada literature">
     <meta name="color-scheme" content="light">
     <meta name="theme-color" content="#faf8f3">
-    <meta http-equiv="x-ua-compatible" content="IE=edge">
     <title>{% block title %}Kannada Library{% endblock %}</title>
     
     <!-- Google Fonts: Inter for UI, Playfair Display for headers -->
@@ -16,7 +15,6 @@
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
     <style>
         /* Force light mode and override any dark mode styles */
@@ -56,9 +54,6 @@
     </style>
 </head>
 <body>
-    <div class="page-transition">
-        <div class="loader"></div>
-    </div>
     <a href="#main-content" class="skip-link">Skip to main content</a>
     
     <nav role="navigation" aria-label="Main navigation">
@@ -76,20 +71,6 @@
                         aria-label="Search works or authors"
                         autocomplete="off"
                         value="{{ request.args.get('q', '') }}"
-                    >
-                </form>
-            </div>
-            
-            <div class="genre-search-container">
-                <form action="{{ url_for('genre_search') }}" method="GET" class="genre-search-form">
-                    <label for="genre-search" class="sr-only">Search by genre</label>
-                    <input 
-                        type="text" 
-                        id="genre-search" 
-                        name="genre" 
-                        placeholder="Search genre..." 
-                        aria-label="Search by genre"
-                        autocomplete="off"
                     >
                 </form>
             </div>
@@ -159,6 +140,5 @@
             });
         });
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

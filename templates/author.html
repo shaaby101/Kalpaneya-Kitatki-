@@ -19,14 +19,7 @@
                 {% for work in works %}
                     <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card">
                         <div class="work-poster">
-                            {% if work.author_image_url and work.author_image_url.strip() %}
-                                <img 
-                                    src="{{ url_for('static', filename='images/' + work.author_image_url) }}" 
-                                    alt="Portrait of {{ author.name_english }}"
-                                    loading="lazy"
-                                    onerror="this.src='https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.title_english|urlencode }}'"
-                                >
-                            {% elif work.cover_image_url and work.cover_image_url.strip() %}
+                            {% if work.cover_image_url %}
                                 <img 
                                     src="{{ url_for('static', filename='images/' + work.cover_image_url) }}" 
                                     alt="Cover for {{ work.title_english }}"
