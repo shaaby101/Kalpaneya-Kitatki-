@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Kannada Library - Track and discover Kannada literature">
+    <meta name="color-scheme" content="light">
+    <meta name="theme-color" content="#faf8f3">
     <title>{% block title %}Kannada Library{% endblock %}</title>
     
     <!-- Google Fonts: Inter for UI, Playfair Display for headers -->
@@ -14,6 +16,42 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+    <style>
+        /* Force light mode and override any dark mode styles */
+        html {
+            color-scheme: light !important;
+        }
+        body {
+            background-color: #faf8f3 !important;
+            color: #1a1a1a !important;
+        }
+        /* Override jQuery UI dark styles if any */
+        .ui-widget {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+        }
+        .ui-widget-content {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+        }
+        .ui-widget-header {
+            background-color: #f5f2eb !important;
+            color: #1a1a1a !important;
+        }
+        .ui-autocomplete {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+        }
+        .ui-menu-item-wrapper {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+        }
+        .ui-menu-item-wrapper:hover,
+        .ui-menu-item-wrapper.ui-state-active {
+            background-color: #f8f6f0 !important;
+            color: #2d5a5f !important;
+        }
+    </style>
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>

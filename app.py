@@ -1,4 +1,6 @@
 import sqlite3
+import json
+import os
 from flask import Flask, render_template, g, jsonify, request, redirect, url_for, flash, abort
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
@@ -41,31 +43,169 @@ def init_db():
         print("Initialized the database.")
         populate_db() # Populate with our author/work data
 
+def get_or_create_author(db, name_kannada, name_english, biography, era, image_url):
+    """Checks if author exists. If not, inserts and returns ID. Prevents duplicates."""
+    existing = db.execute('SELECT author_id FROM Author WHERE name_english = ?', (name_english,)).fetchone()
+    if existing:
+        return existing['author_id']
+    
+    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era, image_url) VALUES (?, ?, ?, ?, ?)',
+               (name_kannada, name_english, biography, era, image_url))
+    return db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
 def populate_db():
     db = get_db()
     
-    # --- Kuvempu (Data from our sources) ---
-    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era, image_url) VALUES (?, ?, ?, ?, ?)',
-               ('ಕುವೆಂಪು', 'Kuvempu', 'Kuppali Venkatappa Puttappa...', 'Navodaya', 'kuvempu.jpeg'))
-    kuvempu_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+    # Load data from JSON files
+    writers_data = []
+    poets_data = []
     
-    db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-               (kuvempu_id, 'ಕಾನೂರು ಹೆಗ್ಗಡಿತಿ', 'Kanooru Heggadithi', 'Novel', 'A novel about feudal life in Malnad.'))
-    db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-               (kuvempu_id, 'ಶ್ರೀ ರಾಮಾಯಣ ದರ್ಶನಂ', 'Sri Ramayana Darshanam', 'Epic Poetry', 'A modern retelling of the Ramayana.'))
+    # Load writers JSON
+    writers_path = os.path.join(os.path.dirname(__file__), 'databases', 'writer.json')
+    if os.path.exists(writers_path):
+        with open(writers_path, 'r', encoding='utf-8') as f:
+            writers_data = json.load(f)
     
-    # --- Poornachandra Tejaswi (Data from our sources) ---
-    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era, image_url) VALUES (?, ?, ?, ?, ?)',
-               ('ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿ', 'Poornachandra Tejaswi', 'K. P. Poornachandra Tejaswi was a prominent writer...', 'Navya/Post-Modern', 'tejaswi.jpeg'))
-    tejaswi_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+    # Load poets JSON
+    poets_path = os.path.join(os.path.dirname(__file__), 'databases', 'poets.json')
+    if os.path.exists(poets_path):
+        with open(poets_path, 'r', encoding='utf-8') as f:
+            poets_data = json.load(f)
     
-    db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-               (tejaswi_id, 'ಕರ್ವಾಲೊ', 'Carvalho', 'Novel', 'A novel about an amateur scientist.'))
-    db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-               (tejaswi_id, 'ಚಿದಂಬರ ರಹಸ್ಯ', 'Chidambara Rahasya', 'Novel', 'A mystery novel set in a rural backdrop.'))
-
+    # Combine and process all authors
+    all_authors = {}
+    
+    # Process writers
+    for writer in writers_data:
+        name = writer.get('name', '')
+        # Skip if already processed (Kuvempu appears in both)
+        if name not in all_authors:
+            # Get Kannada name - use name field as fallback
+            name_kannada = name  # Will use English name if Kannada not available
+            # Try to get Kannada name from existing data or use English
+            if name == 'Kuvempu':
+                name_kannada = 'ಕುವೆಂಪು'
+            elif name == 'U. R. Ananthamurthy':
+                name_kannada = 'ಯು.ಆರ್. ಅನಂತಮೂರ್ತಿ'
+            elif name == 'S. L. Bhyrappa':
+                name_kannada = 'ಎಸ್.ಎಲ್. ಭೈರಪ್ಪ'
+            elif name == 'Poornachandra Tejaswi':
+                name_kannada = 'ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿ'
+            elif name == 'Graama Seva Bhaagya (Bevina Seena Sharief)':
+                name_kannada = 'ಬೆವಿನ ಸೀನ ಶರೀಫ್'
+                name = 'Bevina Seena Sharief'  # Use simpler name
+            
+            biography = writer.get('biography', writer.get('contribution', ''))
+            era = 'Modern'  # Default era
+            if 'Navya' in biography or 'Navya' in writer.get('contribution', ''):
+                era = 'Navya'
+            elif 'Navodaya' in biography:
+                era = 'Navodaya'
+            
+            # Determine image URL
+            image_url = f"{name.lower().replace(' ', '_').replace('.', '')}.jpg"
+            if name == 'Kuvempu':
+                image_url = 'kuvempu.jpeg'
+            elif name == 'Poornachandra Tejaswi':
+                image_url = 'tejaswi.jpeg'
+            
+            all_authors[name] = {
+                'name_kannada': name_kannada,
+                'name_english': name,
+                'biography': biography,
+                'era': era,
+                'image_url': image_url,
+                'famous_works': writer.get('famous_works', []),
+                'genres': writer.get('genres', []),
+                'type': 'Writer'
+            }
+    
+    # Process poets
+    for poet in poets_data:
+        name = poet.get('name', '')
+        # Skip Kuvempu as already processed
+        if name == 'Kuvempu':
+            # Update Kuvempu with additional poetry info
+            if name in all_authors:
+                all_authors[name]['famous_poems'] = poet.get('famous_poems', [])
+            continue
+        
+        # Get Kannada name
+        name_kannada = name
+        if name == 'D. R. Bendre':
+            name_kannada = 'ಡಿ. ಆರ್. ಬೇಂದ್ರೆ'
+        elif name == 'Masti Venkatesha Iyengar':
+            name_kannada = 'ಮಾಸ್ತಿ ವೆಂಕಟೇಶ ಅಯ್ಯಂಗಾರ್'
+        elif name == 'K. S. Narasimhaswamy':
+            name_kannada = 'ಕೆ. ಎಸ್. ನರಸಿಂಹಸ್ವಾಮಿ'
+        elif name == 'G. S. Shivarudrappa':
+            name_kannada = 'ಜಿ. ಎಸ್. ಶಿವರುದ್ರಪ್ಪ'
+        
+        biography = poet.get('biography', poet.get('contribution', ''))
+        era = 'Modern'
+        if 'Navodaya' in biography:
+            era = 'Navodaya'
+        
+        # Determine image URL
+        image_url = f"{name.lower().replace(' ', '_').replace('.', '')}.jpg"
+        
+        all_authors[name] = {
+            'name_kannada': name_kannada,
+            'name_english': name,
+            'biography': biography,
+            'era': era,
+            'image_url': image_url,
+            'famous_works': poet.get('famous_works', []),
+            'famous_poems': poet.get('famous_poems', []),
+            'genres': [],  # Poets don't have genres in the JSON
+            'type': 'Poet'
+        }
+    
+    # Insert authors and get IDs
+    author_ids = {}
+    for author_name, author_info in all_authors.items():
+        author_ids[author_name] = get_or_create_author(
+            db, 
+            author_info['name_kannada'],
+            author_info['name_english'],
+            author_info['biography'],
+            author_info['era'],
+            author_info['image_url']
+        )
+    
+    # Insert works
+    works_count = 0
+    for author_name, author_info in all_authors.items():
+        author_id = author_ids[author_name]
+        
+        # Add famous works (novels, stories, etc.)
+        for work_title in author_info.get('famous_works', []):
+            # Check if work already exists
+            existing_work = db.execute('SELECT work_id FROM Work WHERE title_english = ?', (work_title,)).fetchone()
+            if not existing_work:
+                # Determine work type
+                work_type = 'Novel'
+                if 'Play' in work_title or 'Drama' in author_info.get('genres', []):
+                    work_type = 'Play'
+                elif 'Short Stories' in author_info.get('genres', []):
+                    work_type = 'Short Story'
+                
+                # Use English title for Kannada title if not available
+                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
+                          (author_id, work_title, work_title, work_type, f"A notable work by {author_info['name_english']}."))
+                works_count += 1
+        
+        # Add famous poems
+        for poem_title in author_info.get('famous_poems', []):
+            # Check if work already exists
+            existing_work = db.execute('SELECT work_id FROM Work WHERE title_english = ?', (poem_title,)).fetchone()
+            if not existing_work:
+                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
+                          (author_id, poem_title, poem_title, 'Poetry', f"A famous poem by {author_info['name_english']}."))
+                works_count += 1
+    
     db.commit()
-    print("Populated the database with authors and works.")
+    print(f"Populated the database with {len(all_authors)} authors and {works_count} works.")
 
 @app.cli.command('init')
 def init_db_command():
@@ -80,6 +220,9 @@ class User(UserMixin):
         self.id = id
         self.username = username
         self.email = email
+
+    def get_id(self):
+        return str(self.id)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -171,10 +314,16 @@ def logout():
 def homepage():
     """Homepage now shows all WORKS, which is more visual (Letterboxd-style)."""
     db = get_db()
+    # Fetch works along with author name and author image URL
     works = db.execute('''
-        SELECT Work.*, Author.name_kannada as author_kannada, Author.name_english as author_english, Author.image_url as author_image_url
+        SELECT 
+            Work.*, 
+            Author.name_kannada as author_kannada, 
+            Author.name_english as author_english,
+            Author.image_url as author_image_url
         FROM Work
         JOIN Author ON Work.author_id = Author.author_id
+        ORDER BY Work.work_id DESC
     ''').fetchall()
     return render_template('index.html', works=works)
 
@@ -183,7 +332,11 @@ def work_details(work_id):
     """Shows details for a single work, its reviews, and the review form."""
     db = get_db()
     work = db.execute('''
-        SELECT Work.*, Author.name_kannada as author_kannada, Author.name_english as author_english
+        SELECT 
+            Work.*, 
+            Author.name_kannada as author_kannada, 
+            Author.name_english as author_english,
+            Author.image_url as author_image_url
         FROM Work
         JOIN Author ON Work.author_id = Author.author_id
         WHERE Work.work_id = ?
@@ -202,24 +355,51 @@ def work_details(work_id):
     
     # --- Review Form Logic ---
     form = ReviewForm()
+    
+    # Check for existing review (for update functionality)
+    user_review = None
+    if current_user.is_authenticated:
+        user_review = db.execute(
+            'SELECT * FROM Review WHERE user_id = ? AND work_id = ?', 
+            (current_user.id, work_id)
+        ).fetchone()
+
     if form.validate_on_submit() and current_user.is_authenticated:
         try:
-            db.execute('''
-                INSERT INTO Review (user_id, work_id, rating, review_text, date_read)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (current_user.id, work_id, form.rating.data, form.review_text.data, form.date_read.data))
+            if user_review:
+                # Update existing review
+                db.execute('''
+                    UPDATE Review SET rating=?, review_text=?, date_read=?, date_logged=CURRENT_TIMESTAMP
+                    WHERE review_id = ?
+                ''', (form.rating.data, form.review_text.data, form.date_read.data, user_review['review_id']))
+                flash('Your review has been updated!', 'success')
+            else:
+                # Insert new review
+                db.execute('''
+                    INSERT INTO Review (user_id, work_id, rating, review_text, date_read)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (current_user.id, work_id, form.rating.data, form.review_text.data, form.date_read.data))
+                flash('Your review has been logged!', 'success')
+
             db.commit()
-            flash('Your review has been logged!', 'success')
             return redirect(url_for('work_details', work_id=work_id))
         except Exception as e:
             db.rollback()
             flash(f'Error logging review: {e}', 'danger')
     
-    # Pre-fill form if user is logged in
+    # Pre-fill form if user is logged in and has an existing review
     elif request.method == 'GET' and current_user.is_authenticated:
-        form.date_read.data = datetime.date.today()
+        if user_review:
+            # Pre-populate form with existing data for editing
+            form.rating.data = user_review['rating']
+            form.review_text.data = user_review['review_text']
+            # Convert date string to date object
+            form.date_read.data = datetime.datetime.strptime(user_review['date_read'], '%Y-%m-%d').date()
+        else:
+            # Default date read for new review
+            form.date_read.data = datetime.date.today()
         
-    return render_template('work_details.html', work=work, reviews=reviews, form=form)
+    return render_template('work_details.html', work=work, reviews=reviews, form=form, user_review=user_review)
 
 @app.route('/profile/<string:username>')
 def user_profile(username):
@@ -231,7 +411,7 @@ def user_profile(username):
         abort(404)
         
     reviews = db.execute('''
-        SELECT Review.*, Work.title_kannada, Work.title_english
+        SELECT Review.*, Work.title_kannada, Work.title_english, Work.work_id
         FROM Review
         JOIN Work ON Review.work_id = Work.work_id
         WHERE Review.user_id = ?
@@ -240,21 +420,21 @@ def user_profile(username):
     
     return render_template('profile.html', user=user, reviews=reviews)
 
-# --- Update Author Images (Helper route for existing databases) ---
-@app.route('/update-author-images')
-def update_author_images():
-    """Helper route to update existing author records with image URLs."""
+@app.route('/author/<int:author_id>')
+def author_details(author_id):
+    """Shows details for a single author and all their works."""
     db = get_db()
-    try:
-        db.execute("UPDATE Author SET image_url = 'kuvempu.jpeg' WHERE name_english = 'Kuvempu'")
-        db.execute("UPDATE Author SET image_url = 'tejaswi.jpeg' WHERE name_english = 'Poornachandra Tejaswi'")
-        db.commit()
-        return jsonify({'success': True, 'message': 'Author images updated successfully'})
-    except Exception as e:
-        db.rollback()
-        return jsonify({'success': False, 'message': str(e)})
+    author = db.execute('SELECT * FROM Author WHERE author_id = ?', (author_id,)).fetchone()
 
-# --- Auto-complete search (we can reuse this, but make it better) ---
+    if author is None:
+        abort(404)
+
+    works = db.execute('SELECT * FROM Work WHERE author_id = ?', (author_id,)).fetchall()
+
+    return render_template('author.html', author=author, works=works)
+
+
+# --- Auto-complete search ---
 @app.route('/search-autocomplete')
 def search_autocomplete():
     query = request.args.get('q', '')
@@ -262,14 +442,32 @@ def search_autocomplete():
         return jsonify([])
     
     db = get_db()
-    authors = db.execute('SELECT author_id, name_kannada, name_english FROM Author WHERE name_kannada LIKE ? OR name_english LIKE ?', (f'%{query}%', f'%{query}%')).fetchall()
-    works = db.execute('SELECT work_id, title_kannada, title_english FROM Work WHERE title_kannada LIKE ? OR title_english LIKE ?', (f'%{query}%', f'%{query}%')).fetchall()
+    
+    # Fetch Authors (English or Kannada name contains query)
+    authors = db.execute(
+        'SELECT author_id, name_kannada, name_english FROM Author WHERE name_kannada LIKE ? OR name_english LIKE ? LIMIT 5', 
+        (f'%{query}%', f'%{query}%')
+    ).fetchall()
+    
+    # Fetch Works (English or Kannada title contains query)
+    works = db.execute(
+        'SELECT work_id, title_kannada, title_english FROM Work WHERE title_kannada LIKE ? OR title_english LIKE ? LIMIT 5', 
+        (f'%{query}%', f'%{query}%')
+    ).fetchall()
 
     suggestions = []
     for author in authors:
-        suggestions.append({'label': f"{author['name_english']} ({author['name_kannada']})", 'type': 'Author', 'url': f'/author/{author["author_id"]}'}) # We need to build this page
+        suggestions.append({
+            'label': f"Author: {author['name_english']} ({author['name_kannada']})", 
+            'type': 'Author', 
+            'url': url_for('author_details', author_id=author['author_id'])
+        })
     for work in works:
-        suggestions.append({'label': f"{work['title_english']} ({work['title_kannada']})", 'type': 'Work', 'url': f'/work/{work["work_id"]}'})
+        suggestions.append({
+            'label': f"Work: {work['title_english']} ({work['title_kannada']})", 
+            'type': 'Work', 
+            'url': url_for('work_details', work_id=work['work_id'])
+        })
         
     return jsonify(suggestions)
 

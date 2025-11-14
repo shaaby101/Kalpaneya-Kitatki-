@@ -15,7 +15,7 @@
                             src="{{ url_for('static', filename='images/' + work.author_image_url) }}" 
                             alt="Portrait of {{ work.author_english }}"
                             loading="lazy"
-                            onerror="this.src='https://placehold.co/500x750/1a1a1a/8a8a8a?text={{ work.author_english|urlencode }}'"
+                            onerror="this.src='https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.author_english|urlencode }}'"
                         >
                     {% elif work.cover_image_url and work.cover_image_url.strip() %}
                         <img 
@@ -25,7 +25,7 @@
                         >
                     {% else %}
                         <img 
-                            src="https://placehold.co/500x750/1a1a1a/8a8a8a?text={{ work.author_english|urlencode }}" 
+                            src="https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.author_english|urlencode }}" 
                             alt="Portrait of {{ work.author_english }}"
                             loading="lazy"
                         >

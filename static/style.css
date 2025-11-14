@@ -1,34 +1,39 @@
 /* ============================================
-   Kannada Library - Letterboxd-Inspired UI
-   Dark Mode First, Minimalist, Cinematic
+   Kannada Library - Aged Paper Aesthetic
+   Light Mode, Vintage, Literary
    ============================================ */
 
 /* === CSS Variables === */
 :root {
-    /* Dark Mode Colors */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #121212;
-    --bg-tertiary: #1a1a1a;
-    --bg-card: #181818;
-    --bg-hover: #252525;
+    /* Background Colors - Aged Paper */
+    --bg-primary: #faf8f3;
+    --bg-secondary: #f5f2eb;
+    --bg-tertiary: #f0ede5;
+    --bg-card: #ffffff;
+    --bg-hover: #f8f6f0;
     
-    /* Text Colors */
-    --text-primary: #e5e5e5;
-    --text-secondary: #b3b3b3;
-    --text-muted: #8a8a8a;
+    /* Text Colors - Deep Charcoal */
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #6b6b6b;
     
-    /* Accent Colors - Subtle Neon */
-    --accent-primary: #00d4ff;
-    --accent-secondary: #ff006e;
-    --accent-tertiary: #8338ec;
-    --accent-hover: #00e5ff;
+    /* Accent Colors - Muted Deep Teal/Indigo */
+    --accent-primary: #2d5a5f;
+    --accent-secondary: #3d6b7a;
+    --accent-tertiary: #4a7c8a;
+    --accent-hover: #1f4a4f;
+    
+    /* Highlight Color - Warm Mustard Yellow/Gold */
+    --highlight: #d4a574;
+    --highlight-light: #e8c9a0;
+    --highlight-dark: #b8935a;
     
     /* Borders & Shadows */
-    --border-color: #2a2a2a;
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(0, 212, 255, 0.15);
+    --border-color: #d4c9b8;
+    --shadow-sm: 0 2px 8px rgba(45, 90, 95, 0.08);
+    --shadow-md: 0 4px 16px rgba(45, 90, 95, 0.12);
+    --shadow-lg: 0 8px 32px rgba(45, 90, 95, 0.15);
+    --shadow-glow: 0 0 20px rgba(212, 165, 116, 0.2);
     
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -64,16 +69,31 @@
 html {
     font-size: 16px;
     scroll-behavior: smooth;
+    color-scheme: light;
 }
 
 body {
     font-family: var(--font-primary);
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
+    background-color: var(--bg-primary) !important;
+    background-image: 
+        radial-gradient(circle at 1px 1px, rgba(212, 165, 116, 0.03) 1px, transparent 0);
+    background-size: 20px 20px;
+    color: var(--text-primary) !important;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+}
+
+/* Prevent browser dark mode from overriding */
+@media (prefers-color-scheme: dark) {
+    html {
+        color-scheme: light !important;
+    }
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
 }
 
 /* === Typography === */
@@ -113,12 +133,12 @@ a {
 a:hover,
 a:focus {
     color: var(--accent-hover);
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--highlight);
     outline-offset: 2px;
 }
 
 a:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--highlight);
     outline-offset: 2px;
 }
 
@@ -127,11 +147,12 @@ nav {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background-color: rgba(10, 10, 10, 0.95);
+    background-color: rgba(250, 248, 243, 0.98);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
     padding: var(--spacing-sm) 0;
     transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
 }
 
 nav .nav-container {
@@ -156,7 +177,7 @@ nav .nav-container {
 
 .nav-logo:hover,
 .nav-logo:focus {
-    color: var(--accent-primary);
+    color: var(--highlight-dark);
     outline: none;
 }
 
@@ -170,7 +191,7 @@ nav .nav-container {
 #search-bar {
     width: 100%;
     padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-primary);
@@ -207,7 +228,7 @@ nav .nav-container {
 
 .nav-links a:hover,
 .nav-links a:focus {
-    color: var(--text-primary);
+    color: var(--accent-primary);
     background-color: var(--bg-hover);
     outline: none;
 }
@@ -244,17 +265,20 @@ main.content {
 .alert-info {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
+    background-color: rgba(45, 90, 95, 0.05);
 }
 
 .alert-success {
-    border-color: #00ff88;
-    color: #00ff88;
+    border-color: var(--highlight);
+    color: var(--highlight-dark);
+    background-color: rgba(212, 165, 116, 0.1);
 }
 
 .alert-error,
 .alert-danger {
-    border-color: var(--accent-secondary);
-    color: var(--accent-secondary);
+    border-color: #8b5a3c;
+    color: #6b4423;
+    background-color: rgba(139, 90, 60, 0.1);
 }
 
 /* === Grid Layouts === */
@@ -292,6 +316,7 @@ main.content {
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    box-shadow: var(--shadow-sm);
 }
 
 .work-card:hover,
@@ -299,7 +324,7 @@ main.content {
 .film-card:hover,
 .film-card:focus {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg), var(--shadow-glow);
+    box-shadow: var(--shadow-lg);
     border-color: var(--accent-primary);
     outline: none;
 }
@@ -317,7 +342,8 @@ main.content {
     width: 100%;
     padding-top: 150%; /* 2:3 aspect ratio */
     overflow: hidden;
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .film-poster img,
@@ -364,8 +390,16 @@ main.content {
 .film-year,
 .work-author {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     margin-top: auto;
+    font-weight: 500;
+}
+
+.work-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+    font-style: italic;
 }
 
 /* === Page Headers === */
@@ -375,7 +409,7 @@ main.content {
 .author-header {
     margin-bottom: var(--spacing-xl);
     padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
 }
 
 .main-header h1,
@@ -419,6 +453,7 @@ main.content {
     border-radius: var(--radius-lg);
     margin-bottom: var(--spacing-xl);
     border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
 }
 
 .review-section h3 {
@@ -449,7 +484,7 @@ textarea,
 select {
     width: 100%;
     padding: var(--spacing-sm);
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-primary);
@@ -478,7 +513,7 @@ textarea {
 button,
 input[type="submit"] {
     padding: var(--spacing-sm) var(--spacing-lg);
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-primary);
@@ -504,7 +539,7 @@ input[type="submit"]:hover {
 .btn:focus,
 button:focus,
 input[type="submit"]:focus {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--highlight);
     outline-offset: 2px;
 }
 
@@ -517,13 +552,13 @@ input[type="submit"]:active {
 .btn-primary {
     background-color: var(--accent-primary);
     border-color: var(--accent-primary);
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 .btn-primary:hover {
     background-color: var(--accent-hover);
     border-color: var(--accent-hover);
-    color: var(--bg-primary);
+    color: #ffffff;
 }
 
 /* === Reviews List === */
@@ -544,6 +579,7 @@ input[type="submit"]:active {
     margin-bottom: var(--spacing-md);
     border: 1px solid var(--border-color);
     transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
 }
 
 .review-card:hover {
@@ -557,7 +593,7 @@ input[type="submit"]:active {
 }
 
 .review-card .rating {
-    color: var(--accent-primary);
+    color: var(--highlight-dark);
     font-weight: 600;
     margin-left: var(--spacing-sm);
 }
@@ -608,6 +644,7 @@ input[type="submit"]:active {
     background-color: var(--bg-card);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
 }
 
 .auth-title {
@@ -623,7 +660,7 @@ input[type="submit"]:active {
 .errors {
     list-style: none;
     margin-top: var(--spacing-xs);
-    color: var(--accent-secondary);
+    color: #8b5a3c;
     font-size: 0.85rem;
 }
 
@@ -640,12 +677,17 @@ input[type="submit"]:active {
 
 .text-muted a {
     color: var(--accent-primary);
+    text-decoration: underline;
+}
+
+.text-muted a:hover {
+    color: var(--highlight-dark);
 }
 
 /* === Autocomplete Styling === */
 .ui-autocomplete {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     max-height: 300px;
@@ -659,16 +701,17 @@ input[type="submit"]:active {
 
 .ui-autocomplete .ui-menu-item-wrapper {
     padding: var(--spacing-sm);
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
+    background-color: var(--bg-card) !important;
     border-bottom: 1px solid var(--border-color);
     transition: background-color var(--transition-fast);
 }
 
 .ui-autocomplete .ui-menu-item-wrapper:hover,
 .ui-autocomplete .ui-menu-item-wrapper.ui-state-active {
-    background-color: var(--bg-hover);
+    background-color: var(--bg-hover) !important;
     border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    color: var(--accent-primary) !important;
 }
 
 .suggestion-type {
@@ -679,7 +722,7 @@ input[type="submit"]:active {
 /* === Utility Classes === */
 hr {
     border: none;
-    border-top: 1px solid var(--border-color);
+    border-top: 2px solid var(--border-color);
     margin: var(--spacing-xl) 0;
 }
 
@@ -702,7 +745,7 @@ hr {
     top: -40px;
     left: 0;
     background: var(--accent-primary);
-    color: var(--bg-primary);
+    color: #ffffff;
     padding: 8px;
     text-decoration: none;
     z-index: 100;
@@ -783,7 +826,7 @@ img {
 
 /* === Focus Visible Improvements === */
 *:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--highlight);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
 }

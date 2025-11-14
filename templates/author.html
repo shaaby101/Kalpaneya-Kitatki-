@@ -15,22 +15,32 @@
     <div class="works-list">
         <h3>ಕೃತಿಗಳು (Works)</h3>
         {% if works %}
-            {% for work in works %}
-                <article class="work-card">
-                    <h3>{{ work.title_kannada }} ({{ work.title_english }})</h3>
-                    <p>Type: {{ work.type }}</p>
-                    
-                    {% if work.access_type == 'Public Domain' %}
-                        <a href="{{ work.download_url }}" class="btn btn-primary download-button" target="_blank" rel="noopener noreferrer">
-                            ಡೌನ್‌ಲೋಡ್ (Download)
-                        </a>
-                    {% elif work.access_type == 'Copyrighted' %}
-                        <a href="{{ work.purchase_url }}" class="btn btn-primary purchase-button" target="_blank" rel="noopener noreferrer">
-                            ಖರೀದಿಸಿ (Find Online)
-                        </a>
-                    {% endif %}
-                </article>
-            {% endfor %}
+            <div class="work-grid">
+                {% for work in works %}
+                    <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card">
+                        <div class="work-poster">
+                            {% if work.cover_image_url %}
+                                <img 
+                                    src="{{ url_for('static', filename='images/' + work.cover_image_url) }}" 
+                                    alt="Cover for {{ work.title_english }}"
+                                    loading="lazy"
+                                >
+                            {% else %}
+                                <img 
+                                    src="https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.title_english|urlencode }}" 
+                                    alt="Cover for {{ work.title_english }}"
+                                    loading="lazy"
+                                >
+                            {% endif %}
+                        </div>
+                        <div class="work-details">
+                            <h3 class="work-title">{{ work.title_kannada }}</h3>
+                            <p class="work-author">{{ work.title_english }}</p>
+                            <p class="work-type">Type: {{ work.type }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
         {% else %}
             <p>No works available for this author.</p>
         {% endif %}
