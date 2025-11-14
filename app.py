@@ -45,8 +45,8 @@ def populate_db():
     db = get_db()
     
     # --- Kuvempu (Data from our sources) ---
-    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era) VALUES (?, ?, ?, ?)',
-               ('ಕುವೆಂಪು', 'Kuvempu', 'Kuppali Venkatappa Puttappa...', 'Navodaya'))
+    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era, image_url) VALUES (?, ?, ?, ?, ?)',
+               ('ಕುವೆಂಪು', 'Kuvempu', 'Kuppali Venkatappa Puttappa...', 'Navodaya', 'kuvempu.jpeg'))
     kuvempu_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     
     db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
@@ -55,8 +55,8 @@ def populate_db():
                (kuvempu_id, 'ಶ್ರೀ ರಾಮಾಯಣ ದರ್ಶನಂ', 'Sri Ramayana Darshanam', 'Epic Poetry', 'A modern retelling of the Ramayana.'))
     
     # --- Poornachandra Tejaswi (Data from our sources) ---
-    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era) VALUES (?, ?, ?, ?)',
-               ('ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿ', 'Poornachandra Tejaswi', 'K. P. Poornachandra Tejaswi was a prominent writer...', 'Navya/Post-Modern'))
+    db.execute('INSERT INTO Author (name_kannada, name_english, biography, era, image_url) VALUES (?, ?, ?, ?, ?)',
+               ('ಪೂರ್ಣಚಂದ್ರ ತೇಜಸ್ವಿ', 'Poornachandra Tejaswi', 'K. P. Poornachandra Tejaswi was a prominent writer...', 'Navya/Post-Modern', 'tejaswi.jpeg'))
     tejaswi_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     
     db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
@@ -172,7 +172,7 @@ def homepage():
     """Homepage now shows all WORKS, which is more visual (Letterboxd-style)."""
     db = get_db()
     works = db.execute('''
-        SELECT Work.*, Author.name_kannada as author_kannada, Author.name_english as author_english
+        SELECT Work.*, Author.name_kannada as author_kannada, Author.name_english as author_english, Author.image_url as author_image_url
         FROM Work
         JOIN Author ON Work.author_id = Author.author_id
     ''').fetchall()
@@ -239,6 +239,20 @@ def user_profile(username):
     ''', (user['user_id'],)).fetchall()
     
     return render_template('profile.html', user=user, reviews=reviews)
+
+# --- Update Author Images (Helper route for existing databases) ---
+@app.route('/update-author-images')
+def update_author_images():
+    """Helper route to update existing author records with image URLs."""
+    db = get_db()
+    try:
+        db.execute("UPDATE Author SET image_url = 'kuvempu.jpeg' WHERE name_english = 'Kuvempu'")
+        db.execute("UPDATE Author SET image_url = 'tejaswi.jpeg' WHERE name_english = 'Poornachandra Tejaswi'")
+        db.commit()
+        return jsonify({'success': True, 'message': 'Author images updated successfully'})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
 
 # --- Auto-complete search (we can reuse this, but make it better) ---
 @app.route('/search-autocomplete')

@@ -18,6 +18,8 @@ CREATE TABLE Author (
     biography TEXT,
     image_url TEXT, -- e.g., 'kuvempu.jpg'
     era TEXT
+    UPDATE Author SET image_url = 'kuvempu.jpeg' WHERE name_english = 'Kuvempu';
+    UPDATE Author SET image_url = 'tejaswi.jpeg' WHERE name_english = 'Poornachandra Tejaswi';
 );
 
 CREATE TABLE Work (

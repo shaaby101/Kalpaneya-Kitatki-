@@ -1,53 +1,78 @@
 {% extends "layout.html" %}
+{% block title %}{{ work.title_english }} - Kannada Library{% endblock %}
 {% block content %}
     <div class="work-header">
-        <h1>{{ work.title_kannada }} ({{ work.title_english }})</h1>
-        <h2>by {{ work.author_english }}</h2>
-        <p>{{ work.synopsis }}</p>
+        <h1>{{ work.title_kannada }}</h1>
+        <h2>{{ work.title_english }}</h2>
+        <p class="work-author">by <strong>{{ work.author_english }}</strong></p>
+        {% if work.synopsis %}
+            <p>{{ work.synopsis }}</p>
+        {% endif %}
     </div>
 
-    <hr>
-
     <div class="review-section">
-        <h3>Log or Review This Book</h3>
+        <h3>Log or Review This Work</h3>
         {% if current_user.is_authenticated %}
-            <form method="POST" action="">
+            <form method="POST" action="" class="auth-form">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
-                    {{ form.rating.label }}
-                    {{ form.rating(type="number", min="1", max="5") }}
+                    {{ form.rating.label(class="form-label") }}
+                    {{ form.rating(class="form-input", min="1", max="5", placeholder="1-5") }}
+                    {% if form.rating.errors %}
+                        <ul class="errors">
+                            {% for error in form.rating.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.date_read.label }}
-                    {{ form.date_read(type="date") }}
+                    {{ form.date_read.label(class="form-label") }}
+                    {{ form.date_read(class="form-input", type="date") }}
+                    {% if form.date_read.errors %}
+                        <ul class="errors">
+                            {% for error in form.date_read.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.review_text.label }}
-                    {{ form.review_text(rows=5) }}
+                    {{ form.review_text.label(class="form-label") }}
+                    {{ form.review_text(class="form-input", rows=5, placeholder="Share your thoughts...") }}
+                    {% if form.review_text.errors %}
+                        <ul class="errors">
+                            {% for error in form.review_text.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
                 <div class="form-group">
-                    {{ form.submit() }}
+                    {{ form.submit(class="btn btn-primary") }}
                 </div>
             </form>
         {% else %}
-            <p><a href="{{ url_for('login') }}">Login</a> to log or review this book.</p>
+            <p><a href="{{ url_for('login') }}">Login</a> to log or review this work.</p>
         {% endif %}
     </div>
 
     <div class="reviews-list">
         <h3>Recent Reviews & Logs</h3>
-        {% for review in reviews %}
-            <div class="review-card">
-                <p>
-                    <strong>{{ review.username }}</strong> read on {{ review.date_read }}
-                    <span class="rating">★ {{ review.rating }}/5</span>
-                </p>
-                {% if review.review_text %}
-                    <p class="review-text">{{ review.review_text }}</p>
-                {% endif %}
-            </div>
+        {% if reviews %}
+            {% for review in reviews %}
+                <article class="review-card">
+                    <p>
+                        <strong>{{ review.username }}</strong> read on {{ review.date_read }}
+                        <span class="rating">★ {{ review.rating }}/5</span>
+                    </p>
+                    {% if review.review_text %}
+                        <p class="review-text">{{ review.review_text }}</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
         {% else %}
-            <p>No one has logged this book yet.</p>
-        {% endfor %}
+            <p>No one has logged this work yet.</p>
+        {% endif %}
     </div>
 {% endblock %}

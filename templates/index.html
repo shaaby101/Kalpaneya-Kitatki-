@@ -1,12 +1,43 @@
 {% extends "layout.html" %}
+{% block title %}All Works - Kannada Library{% endblock %}
 {% block content %}
-    <h2>All Works</h2>
-    <div class="work-grid">
+    <header class="main-header">
+        <h1>All Works</h1>
+        <p>Discover Kannada literature</p>
+    </header>
+    
+    <div class="work-grid" role="list">
         {% for work in works %}
-            <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card">
-                <div class="work-title">{{ work.title_kannada }}</div>
-                <div class="work-author">{{ work.author_english }}</div>
+            <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card" role="listitem" aria-label="{{ work.title_english }}">
+                <div class="work-poster">
+                    {% if work.author_image_url and work.author_image_url.strip() %}
+                        <img 
+                            src="{{ url_for('static', filename='images/' + work.author_image_url) }}" 
+                            alt="Portrait of {{ work.author_english }}"
+                            loading="lazy"
+                            onerror="this.src='https://placehold.co/500x750/1a1a1a/8a8a8a?text={{ work.author_english|urlencode }}'"
+                        >
+                    {% elif work.cover_image_url and work.cover_image_url.strip() %}
+                        <img 
+                            src="{{ url_for('static', filename='images/' + work.cover_image_url) }}" 
+                            alt="Cover for {{ work.title_english }}"
+                            loading="lazy"
+                        >
+                    {% else %}
+                        <img 
+                            src="https://placehold.co/500x750/1a1a1a/8a8a8a?text={{ work.author_english|urlencode }}" 
+                            alt="Portrait of {{ work.author_english }}"
+                            loading="lazy"
+                        >
+                    {% endif %}
+                </div>
+                <div class="work-details">
+                    <h3 class="work-title">{{ work.title_kannada }}</h3>
+                    <p class="work-author">{{ work.author_english }}</p>
+                </div>
             </a>
+        {% else %}
+            <p>No works available yet.</p>
         {% endfor %}
     </div>
 {% endblock %}
