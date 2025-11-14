@@ -28,6 +28,7 @@ CREATE TABLE Work (
     synopsis TEXT,
     cover_image_url TEXT, -- e.g., 'kanooru_heggadithi.jpg'
     type TEXT, -- 'Novel', 'Poetry', 'Play'
+    genres TEXT, -- JSON array of genres, e.g., '["Novel", "Social"]'
     FOREIGN KEY (author_id) REFERENCES Author (author_id)
 );
 

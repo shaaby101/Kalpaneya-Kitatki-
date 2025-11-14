@@ -1,0 +1,17 @@
+<nav>
+    <!-- ...existing nav content... -->
+    <div class="nav-right">
+        <!-- Genre search (submits to /genre_search) -->
+        <form action="{{ url_for('genre_search') }}" method="get" class="nav-genre-search" aria-label="Search by genre" style="display:inline-flex;align-items:center;gap:8px;">
+            <input
+                type="search"
+                name="genre"
+                placeholder="Genre (e.g. Novel, Poetry)"
+                aria-label="Search genre"
+                style="height:32px;padding:6px 10px;border-radius:9999px;border:1px solid #e6eef4;background:#fff;font-size:0.95rem;"
+            />
+            <button type="submit" aria-label="Search genre" style="display:none;">Search</button>
+        </form>
+    </div>
+    <!-- ...existing nav content... -->
+</nav>

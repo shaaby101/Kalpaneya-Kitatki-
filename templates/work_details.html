@@ -4,7 +4,7 @@
     <div class="work-header">
         <h1>{{ work.title_kannada }}</h1>
         <h2>{{ work.title_english }}</h2>
-        <p class="work-author">by <strong>{{ work.author_english }}</strong></p>
+        <p class="work-author">by <strong><a href="{{ url_for('author_details', author_id=work.author_id) }}" class="author-link">{{ work.author_english }}</a></strong></p>
         {% if work.synopsis %}
             <p>{{ work.synopsis }}</p>
         {% endif %}

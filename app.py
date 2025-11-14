@@ -1,13 +1,14 @@
-import sqlite3
-import json
 import os
-from flask import Flask, render_template, g, jsonify, request, redirect, url_for, flash, abort
+import json
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, g, flash, jsonify, abort
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, TextAreaField, DateField, IntegerField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length, NumberRange
 import datetime
+import re
 
 # --- App Setup ---
 app = Flask(__name__)
@@ -64,13 +65,17 @@ def populate_db():
     writers_path = os.path.join(os.path.dirname(__file__), 'databases', 'writer.json')
     if os.path.exists(writers_path):
         with open(writers_path, 'r', encoding='utf-8') as f:
-            writers_data = json.load(f)
+            json_obj = json.load(f)
+            # Handle nested "authors" key if it exists
+            writers_data = json_obj.get('authors', json_obj) if isinstance(json_obj, dict) else json_obj
     
     # Load poets JSON
     poets_path = os.path.join(os.path.dirname(__file__), 'databases', 'poets.json')
     if os.path.exists(poets_path):
         with open(poets_path, 'r', encoding='utf-8') as f:
-            poets_data = json.load(f)
+            json_obj = json.load(f)
+            # Handle nested "authors" or "poets" key if it exists
+            poets_data = json_obj.get('poets', json_obj.get('authors', json_obj)) if isinstance(json_obj, dict) else json_obj
     
     # Combine and process all authors
     all_authors = {}
@@ -177,31 +182,83 @@ def populate_db():
     works_count = 0
     for author_name, author_info in all_authors.items():
         author_id = author_ids[author_name]
-        
+        author_genres = json.dumps(author_info.get('genres', []))  # Convert genres to JSON string
+
         # Add famous works (novels, stories, etc.)
-        for work_title in author_info.get('famous_works', []):
+        for work in author_info.get('famous_works', []):
+            # Handle both string and object formats
+            if isinstance(work, dict):
+                work_title = work.get('title', '')
+                work_description = work.get('short_description', '')
+                # prefer per-work genre when present
+                work_genre_field = work.get('genre', '')
+            else:
+                work_title = work
+                work_description = ''
+                work_genre_field = ''
+
+            if not work_title:
+                continue
+
             # Check if work already exists
             existing_work = db.execute('SELECT work_id FROM Work WHERE title_english = ?', (work_title,)).fetchone()
             if not existing_work:
                 # Determine work type
                 work_type = 'Novel'
-                if 'Play' in work_title or 'Drama' in author_info.get('genres', []):
+                # if the work-level genre suggests poetry/play, prefer that
+                if work_genre_field and ('poem' in work_genre_field.lower() or 'poetry' in work_genre_field.lower()):
+                    work_type = 'Poetry'
+                elif 'play' in work_genre_field.lower() or 'drama' in work_genre_field.lower():
                     work_type = 'Play'
-                elif 'Short Stories' in author_info.get('genres', []):
+                elif 'short' in work_genre_field.lower() or 'story' in work_genre_field.lower():
                     work_type = 'Short Story'
-                
+                else:
+                    if 'Play' in work_title or 'Drama' in author_info.get('genres', []):
+                        work_type = 'Play'
+                    elif 'Short Stories' in author_info.get('genres', []):
+                        work_type = 'Short Story'
+
+                synopsis = work_description or f"A notable work by {author_info['name_english']}."
+                # Build genres JSON: prefer work-level genre, else author genres
+                if work_genre_field:
+                    # split multi-part genre strings on comma or slash
+                    parts = [p.strip() for p in re.split('[,/]', work_genre_field) if p.strip()]
+                    work_genres_json = json.dumps(parts)
+                else:
+                    work_genres_json = author_genres
+
                 # Use English title for Kannada title if not available
-                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-                          (author_id, work_title, work_title, work_type, f"A notable work by {author_info['name_english']}."))
+                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis, genres) VALUES (?, ?, ?, ?, ?, ?)',
+                          (author_id, work_title, work_title, work_type, synopsis, work_genres_json))
                 works_count += 1
-        
+
         # Add famous poems
-        for poem_title in author_info.get('famous_poems', []):
+        for poem in author_info.get('famous_poems', []):
+            # Handle both string and object formats
+            if isinstance(poem, dict):
+                poem_title = poem.get('title', '')
+                poem_description = poem.get('short_description', '')
+                poem_genre_field = poem.get('genre', '')
+            else:
+                poem_title = poem
+                poem_description = ''
+                poem_genre_field = ''
+
+            if not poem_title:
+                continue
+
             # Check if work already exists
             existing_work = db.execute('SELECT work_id FROM Work WHERE title_english = ?', (poem_title,)).fetchone()
             if not existing_work:
-                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis) VALUES (?, ?, ?, ?, ?)',
-                          (author_id, poem_title, poem_title, 'Poetry', f"A famous poem by {author_info['name_english']}."))
+                synopsis = poem_description or f"A famous poem by {author_info['name_english']}."
+                # prefer work-level genre for poems
+                if poem_genre_field:
+                    parts = [p.strip() for p in re.split('[,/]', poem_genre_field) if p.strip()]
+                    poem_genres_json = json.dumps(parts)
+                else:
+                    poem_genres_json = author_genres
+                db.execute('INSERT INTO Work (author_id, title_kannada, title_english, type, synopsis, genres) VALUES (?, ?, ?, ?, ?, ?)',
+                          (author_id, poem_title, poem_title, 'Poetry', synopsis, poem_genres_json))
                 works_count += 1
     
     db.commit()
@@ -537,14 +594,22 @@ def user_profile(username):
         abort(404)
         
     reviews = db.execute('''
-        SELECT Review.*, Work.title_kannada, Work.title_english, Work.work_id
+        SELECT 
+            Review.*, 
+            Work.title_kannada, 
+            Work.title_english, 
+            Work.work_id,
+            Author.name_kannada,
+            Author.name_english,
+            Author.author_id
         FROM Review
         JOIN Work ON Review.work_id = Work.work_id
+        JOIN Author ON Work.author_id = Author.author_id
         WHERE Review.user_id = ?
         ORDER BY Review.date_read DESC
     ''', (user['user_id'],)).fetchall()
     
-    return render_template('profile.html', user=user, reviews=reviews)
+    return render_template('profiles.html', user=user, reviews=reviews)
 
 @app.route('/author/<int:author_id>')
 def author_details(author_id):
@@ -695,6 +760,106 @@ def search_results():
           query.lower(), query.lower(), f'{query.lower()}%', f'{query.lower()}%')).fetchall()
     
     return render_template('search_results.html', query=query, works=works, authors=authors)
+
+# load writer.json once at startup
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WRITER_JSON_PATH = os.path.join(BASE_DIR, "writer.json")
+
+def load_writers():
+    try:
+        with open(WRITER_JSON_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+WRITERS = load_writers()
+
+def get_author_ids_by_genre(genre):
+    if not genre:
+        return set()
+    genre_l = genre.strip().lower()
+    matches = set()
+    for w in WRITERS:
+        genres = w.get("genres", []) or []
+        genres_l = [g.strip().lower() for g in genres]
+        if any(genre_l == g or genre_l in g for g in genres_l):
+            if "author_id" in w:
+                try:
+                    matches.add(int(w["author_id"]))
+                except Exception:
+                    pass
+            else:
+                matches.add(w.get("name") or w.get("name_english") or "")
+    return matches
+
+def query_db(query, args=(), one=False):
+    con = getattr(g, "_database", None)
+    if con is None:
+        con = g._database = sqlite3.connect(os.path.join(BASE_DIR, "kannada_letterboxd.db"))
+        con.row_factory = sqlite3.Row
+    cur = con.execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
+
+@app.route("/genre_search")
+def genre_search():
+    genre = request.args.get("genre", "").strip()
+    if not genre:
+        flash("Please enter a genre to search.", "info")
+        return redirect(request.referrer or url_for("homepage"))
+
+    genre_lower = genre.lower()
+    db = get_db()
+    
+    # Search for works where the genres JSON field contains the requested genre
+    # Only search in work type and genres, not author names
+    works = db.execute("""
+        SELECT DISTINCT 
+            Work.*, 
+            Author.name_kannada, 
+            Author.name_english,
+            Author.author_id,
+            Author.image_url as author_image_url,
+            COUNT(Review.review_id) as review_count,
+            AVG(Review.rating) as avg_rating
+        FROM Work 
+        JOIN Author ON Work.author_id = Author.author_id
+        LEFT JOIN Review ON Work.work_id = Review.work_id
+        WHERE 
+            lower(Work.type) LIKE ? 
+            OR lower(Work.genres) LIKE ?
+        GROUP BY Work.work_id
+        ORDER BY Work.title_english ASC
+    """, (f"%{genre_lower}%", f"%{genre_lower}%")).fetchall()
+    
+    # If no results with genre search, try broader search
+    if not works:
+        works = db.execute("""
+            SELECT 
+                Work.*, 
+                Author.name_kannada, 
+                Author.name_english,
+                Author.author_id,
+                Author.image_url as author_image_url,
+                COUNT(Review.review_id) as review_count,
+                AVG(Review.rating) as avg_rating
+            FROM Work 
+            JOIN Author ON Work.author_id = Author.author_id
+            LEFT JOIN Review ON Work.work_id = Review.work_id
+            WHERE 
+                lower(Work.title_english) LIKE ? 
+                OR lower(Work.title_kannada) LIKE ?
+                OR lower(Work.synopsis) LIKE ?
+            GROUP BY Work.work_id
+            ORDER BY Work.title_english ASC
+        """, (f"%{genre_lower}%", f"%{genre_lower}%", f"%{genre_lower}%")).fetchall()
+
+    return render_template("genre_results.html", genre=genre, works=works)
+
+@app.route("/genre/<genre>")
+def genre_page(genre):
+    return redirect(url_for("genre_search", genre=genre))
 
 
 if __name__ == '__main__':
