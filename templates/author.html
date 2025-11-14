@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ author.name_english }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1><a href="/">← ಮುಖಪುಟಕ್ಕೆ (Back to Home)</a></h1>
+    </header>
+
+    <main class="profile-main">
+        <div class="author-header">
+            <h1>{{ author.name_kannada }} ({{ author.name_english }})</h1>
+            <p class="author-era">Era: {{ author.era }}</p>
+            <p class="author-bio">{{ author.biography }}</p>
+        </div>
+
+        <hr>
+
+        <h2>ಕೃತಿಗಳು (Works)</h2>
+        <div class="works-list">
+            {% for work in works %}
+            <div class="work-card">
+                <h3>{{ work.title_kannada }} ({{ work.title_english }})</h3>
+                <p>Type: {{ work.type }}</p>
+                
+                {% if work.access_type == 'Public Domain' %}
+                    <a href="{{ work.download_url }}" class="button download-button" target="_blank">
+                        ಡೌನ್‌ಲೋಡ್ (Download)
+                    </a>
+                {% elif work.access_type == 'Copyrighted' %}
+                    <a href="{{ work.purchase_url }}" class="button purchase-button" target="_blank">
+                        ಖರೀದಿಸಿ (Find Online)
+                    </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,377 @@
+/* --- Global & Dark Mode Setup --- */
+:root {
+    --primary-color: #f7526a; /* A vibrant, slightly darker red/pink */
+    --accent-color: #ff914d; /* For gradients */
+    --background-dark: #1a1a2e; /* Very dark blue-purple */
+    --background-gradient-start: #2a003f; /* Deep purple for gradient start */
+    --background-gradient-end: #000000; /* Black for gradient end */
+    --card-background: #232946; /* Slightly lighter than background-dark, for card-like elements */
+    --text-color-light: #e0e0e0;
+    --text-color-muted: #a0a0a0;
+    --border-color: #404060;
+    --input-background: #1a1a2e; /* Same as background for seamless input */
+    --button-bg-dark: #3a3a5e; /* Dark button background */
+    --button-hover-bg-dark: #4a4a6e;
+    --font-serif: "Georgia", serif; /* For headings, mimicking mymind */
+    --font-sans: "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    font-family: var(--font-sans);
+    margin: 0;
+    padding-top: 80px; /* Space for fixed nav */
+    background: linear-gradient(135deg, var(--background-gradient-start) 0%, var(--background-gradient-end) 100%);
+    background-attachment: fixed; /* Keep gradient fixed on scroll */
+    color: var(--text-color-light);
+    min-height: 100vh; /* Ensure body takes full height for gradient */
+    display: flex;
+    flex-direction: column; /* For footer if added */
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* --- Utility Classes --- */
+.text-muted {
+    color: var(--text-color-muted);
+}
+.error {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+ul.errors {
+    list-style: none;
+    padding: 0;
+    margin-top: 0.5rem;
+}
+ul.errors li {
+    color: var(--primary-color);
+    font-size: 0.85rem;
+}
+
+/* --- Navigation Bar --- */
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 60px;
+    background-color: var(--background-dark); /* Darker nav */
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Subtle shadow */
+}
+.nav-logo {
+    font-family: var(--font-serif); /* Serif for logo */
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--text-color-light);
+    letter-spacing: -0.5px;
+}
+.nav-links a {
+    color: var(--text-color-light);
+    font-weight: 500;
+    margin-left: 1.5rem;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+.nav-links a:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* --- Search Bar --- */
+.search-container {
+    flex-grow: 1; /* Allow it to take available space */
+    max-width: 400px; /* Limit width */
+    margin: 0 2rem;
+    position: relative; /* For autocomplete */
+}
+#search-bar {
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 25px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background);
+    color: var(--text-color-light);
+    transition: all 0.2s;
+}
+#search-bar::placeholder {
+    color: var(--text-color-muted);
+}
+#search-bar:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(247, 82, 106, 0.3);
+}
+
+/* Autocomplete results */
+.ui-autocomplete {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: var(--font-sans);
+}
+.ui-menu-item-wrapper {
+    padding: 10px 15px;
+    color: var(--text-color-light);
+    transition: background-color 0.1s;
+}
+.ui-menu-item-wrapper:hover, .ui-state-active {
+    background-color: var(--button-bg-dark);
+    color: var(--text-color-light);
+    cursor: pointer;
+}
+.suggestion-type {
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+    font-style: italic;
+}
+
+/* --- Main Content Area --- */
+.content {
+    max-width: 1000px;
+    margin: 3rem auto; /* More vertical spacing */
+    padding: 0 1.5rem;
+    flex-grow: 1; /* Allow content to grow and push footer down */
+}
+
+/* --- Homepage Work Grid --- */
+.work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+.work-card {
+    background-color: var(--card-background);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex; /* For better text alignment */
+    flex-direction: column;
+    justify-content: center; /* Center text vertically */
+}
+.work-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+.work-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-color-light);
+    margin-bottom: 0.5rem;
+}
+.work-author {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+}
+
+/* --- Work Details Page --- */
+.work-header {
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+.work-header h1 {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: var(--text-color-light);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.8px;
+}
+.work-header h2 {
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--text-color-muted);
+    margin-top: 0;
+}
+.work-header p {
+    font-size: 1.1rem;
+    max-width: 800px;
+    margin: 1.5rem auto;
+    line-height: 1.6;
+}
+
+/* --- Review Form & Sections --- */
+.review-section, .review-card, .profile-reviews-list {
+    background: var(--card-background);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+h3 {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: var(--text-color-light);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+/* --- Form Styling (General) --- */
+.form-group {
+    margin-bottom: 1.2rem;
+    display: flex;
+    flex-direction: column;
+}
+.form-label {
+    font-size: 1rem;
+    color: var(--text-color-light);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.form-input {
+    background-color: var(--input-background);
+    color: var(--text-color-light);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px 15px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(247, 82, 106, 0.2);
+}
+textarea.form-input {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.btn {
+    display: inline-block;
+    font-size: 1.1rem;
+    font-weight: bold;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.btn-primary {
+    background-color: var(--primary-color);
+    color: var(--text-color-light);
+}
+.btn-primary:hover {
+    background-color: #d84459;
+    transform: translateY(-2px);
+}
+
+/* --- Auth Specific Styling (Register/Login Containers) --- */
+.auth-container {
+    max-width: 500px;
+    margin: 3rem auto;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    padding: 3rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    border: 1px solid var(--border-color);
+}
+.auth-title {
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    text-align: center;
+    color: var(--text-color-light);
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+}
+.auth-form .form-group {
+    margin-bottom: 1.5rem;
+}
+.auth-form .btn-primary {
+    width: 100%;
+    padding: 15px;
+    margin-top: 1rem;
+}
+.auth-form .text-muted {
+    display: block;
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.95rem;
+}
+
+
+/* --- Review List --- */
+.reviews-list, .profile-reviews-list {
+    padding: 2rem;
+}
+.review-card {
+    background-color: var(--input-background); /* Darker background for individual reviews */
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+.review-card p {
+    margin: 0 0 0.5rem 0;
+    line-height: 1.5;
+}
+.review-card strong {
+    color: var(--text-color-light);
+}
+.review-card .rating {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-left: 1rem;
+}
+.review-card .review-text {
+    font-style: italic;
+    color: var(--text-color-muted);
+    margin-top: 1rem;
+}
+
+/* --- Profile Page --- */
+.profile-header {
+    text-align: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+.profile-header h1 {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: var(--text-color-light);
+    margin-bottom: 0.5rem;
+}
+.profile-reviews-list h3 {
+    text-align: center;
+}
+
+/* --- Flash Messages --- */
+.alert {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-align: center;
+    color: var(--text-color-light);
+}
+.alert-success {
+    background-color: #2e7d32; /* Darker green */
+}
+.alert-danger {
+    background-color: #c62828; /* Darker red */
+}
+.alert-info {
+    background-color: #01579b; /* Darker blue */
+}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="profile-header">
+        <h1>{{ user.username }}'s Profile</h1>
+        <p>{{ reviews|length }} books logged.</p>
+    </div>
+    
+    <hr>
+    
+    <div class="profile-reviews-list">
+        <h3>Logged Books</h3>
+        {% for review in reviews %}
+            <div class="review-card">
+                <p>
+                    <strong>{{ review.title_english }} ({{ review.title_kannada }})</strong>
+                </p>
+                <p>
+                    Read on {{ review.date_read }}
+                    <span class="rating">★ {{ review.rating }}/5</span>
+                </p>
+                {% if review.review_text %}
+                    <p class="review-text">{{ review.review_text }}</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p>{{ user.username }} hasn't logged any books yet.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

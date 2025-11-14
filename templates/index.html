@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2>All Works</h2>
+    <div class="work-grid">
+        {% for work in works %}
+            <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card">
+                <div class="work-title">{{ work.title_kannada }}</div>
+                <div class="work-author">{{ work.author_english }}</div>
+            </a>
+        {% endfor %}
+    </div>
+{% endblock %}

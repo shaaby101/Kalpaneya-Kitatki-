@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ '' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('homepage') }}" class="nav-logo">Kannada Reads</a>
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Search works or authors...">
+        </div>
+        <div class="nav-links">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('user_profile', username=current_user.username) }}">My Profile</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"></script>
+    <script>
+        $(function() {
+            $("#search-bar").autocomplete({
+                source: "{{ url_for('search_autocomplete') }}",
+                minLength: 2,
+                select: function(event, ui) {
+                    window.location.href = ui.item.url;
+                    return false;
+                }
+            }).autocomplete("instance")._renderItem = function(ul, item) {
+                return $("<li>")
+                    .append("<div><strong>" + item.label + "</strong><br><span class='suggestion-type'>(" + item.type + ")</span></div>")
+                    .appendTo(ul);
+            };
+        });
+    </script>
+</body>
+</html>
