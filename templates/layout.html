@@ -61,15 +61,18 @@
             <a href="{{ url_for('homepage') }}" class="nav-logo" aria-label="Kannada Library Home">Kannada Library</a>
             
             <div class="search-container">
-                <label for="search-bar" class="sr-only">Search works or authors</label>
-                <input 
-                    type="text" 
-                    id="search-bar" 
-                    name="search" 
-                    placeholder="Search works or authors..." 
-                    aria-label="Search works or authors"
-                    autocomplete="off"
-                >
+                <form action="{{ url_for('search_results') }}" method="GET" class="search-form">
+                    <label for="search-bar" class="sr-only">Search works or authors</label>
+                    <input 
+                        type="text" 
+                        id="search-bar" 
+                        name="q" 
+                        placeholder="Search works or authors..." 
+                        aria-label="Search works or authors"
+                        autocomplete="off"
+                        value="{{ request.args.get('q', '') }}"
+                    >
+                </form>
             </div>
             
             <div class="nav-links">
@@ -102,18 +105,39 @@
     <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"></script>
     <script>
         $(function() {
-            $("#search-bar").autocomplete({
+            var searchForm = $(".search-form");
+            var searchBar = $("#search-bar");
+            
+            // Autocomplete functionality
+            searchBar.autocomplete({
                 source: "{{ url_for('search_autocomplete') }}",
-                minLength: 2,
+                minLength: 1,
+                delay: 150,
                 select: function(event, ui) {
                     window.location.href = ui.item.url;
                     return false;
+                },
+                focus: function(event, ui) {
+                    // Prevent default focus behavior
+                    return false;
                 }
             }).autocomplete("instance")._renderItem = function(ul, item) {
+                var typeClass = item.type.toLowerCase();
                 return $("<li>")
-                    .append("<div><strong>" + item.label + "</strong><br><span class='suggestion-type'>(" + item.type + ")</span></div>")
+                    .append("<div class='autocomplete-item'><span class='suggestion-type " + typeClass + "'>" + item.type + "</span><strong>" + item.label.replace(item.type + ": ", "") + "</strong></div>")
                     .appendTo(ul);
             };
+            
+            // Handle Enter key - submit form to search results page
+            searchBar.on('keydown', function(e) {
+                if (e.key === 'Enter' && !$('.ui-autocomplete').is(':visible')) {
+                    e.preventDefault();
+                    var query = $(this).val().trim();
+                    if (query) {
+                        searchForm.submit();
+                    }
+                }
+            });
         });
     </script>
 </body>

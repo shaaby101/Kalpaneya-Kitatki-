@@ -2,8 +2,8 @@
 {% block title %}All Works - Kannada Library{% endblock %}
 {% block content %}
     <header class="main-header">
-        <h1>All Works</h1>
-        <p>Discover Kannada literature</p>
+        <h1>Popular This Week</h1>
+        <p>Most reviewed and highly rated works</p>
     </header>
     
     <div class="work-grid" role="list">
@@ -34,10 +34,20 @@
                 <div class="work-details">
                     <h3 class="work-title">{{ work.title_kannada }}</h3>
                     <p class="work-author">{{ work.author_english }}</p>
+                    {% if work.review_count %}
+                        <p class="work-stats">
+                            <span class="rating">★ {{ "%.1f"|format(work.avg_rating) }}</span>
+                            <span class="review-count">{{ work.review_count }} review{{ 's' if work.review_count != 1 else '' }}</span>
+                        </p>
+                    {% endif %}
                 </div>
             </a>
-        {% else %}
-            <p>No works available yet.</p>
         {% endfor %}
+        {% if not works %}
+            <div class="no-results">
+                <p>No popular works this week.</p>
+                <p>Check back soon or <a href="{{ url_for('search_results') }}">search for works</a> to discover literature.</p>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

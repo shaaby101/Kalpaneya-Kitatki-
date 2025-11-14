@@ -207,11 +207,111 @@ def populate_db():
     db.commit()
     print(f"Populated the database with {len(all_authors)} authors and {works_count} works.")
 
+def populate_reviews():
+    """Populate reviews for all works with ratings between 4 and 5."""
+    import random
+    db = get_db()
+    
+    # Get all works
+    works = db.execute('SELECT work_id FROM Work').fetchall()
+    
+    # Get or create dummy users for reviews
+    dummy_users = []
+    user_names = ['BookLover', 'LiteraryFan', 'KannadaReader', 'PoetryEnthusiast', 'NovelAdmirer', 
+                  'ClassicReader', 'ModernLitFan', 'StorySeeker', 'PageTurner', 'BookWorm']
+    
+    for username in user_names:
+        user = db.execute('SELECT user_id FROM User WHERE username = ?', (username,)).fetchone()
+        if not user:
+            # Create dummy user with hashed password
+            hashed = bcrypt.generate_password_hash('dummy123').decode('utf-8')
+            db.execute('INSERT INTO User (username, email, password_hash) VALUES (?, ?, ?)',
+                      (username, f'{username.lower()}@example.com', hashed))
+            user_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+        else:
+            user_id = user['user_id']
+        dummy_users.append(user_id)
+    
+    # Sample review texts
+    review_texts = [
+        "A masterpiece of Kannada literature. Deeply moving and thought-provoking.",
+        "Beautifully written with rich cultural insights. Highly recommended!",
+        "One of the finest works I've read. The narrative is captivating.",
+        "A profound exploration of human nature and society. Exceptional writing.",
+        "This book left a lasting impression. The author's style is remarkable.",
+        "An excellent read that captures the essence of Kannada culture.",
+        "Brilliant storytelling with deep philosophical undertones.",
+        "A must-read for anyone interested in Kannada literature.",
+        "The characters are well-developed and the plot is engaging.",
+        "Outstanding work that deserves to be read by everyone.",
+        "Beautiful prose and meaningful themes throughout.",
+        "A classic that stands the test of time.",
+        "Thoughtful and inspiring. One of my favorites.",
+        "The author's command over language is impressive.",
+        "A wonderful book that I couldn't put down."
+    ]
+    
+    # Populate reviews for each work
+    reviews_added = 0
+    for work in works:
+        work_id = work['work_id']
+        
+        # Check existing reviews count
+        existing_count = db.execute('SELECT COUNT(*) as count FROM Review WHERE work_id = ?', 
+                                   (work_id,)).fetchone()['count']
+        
+        # Add 3-8 reviews per work (to create variation in popularity)
+        num_reviews = random.randint(3, 8)
+        
+        for _ in range(num_reviews):
+            # Random user
+            user_id = random.choice(dummy_users)
+            
+            # Check if this user already reviewed this work
+            existing_review = db.execute('SELECT review_id FROM Review WHERE user_id = ? AND work_id = ?',
+                                        (user_id, work_id)).fetchone()
+            if existing_review:
+                continue
+            
+            # Rating between 4 and 5 (using 4 or 5 since rating is INTEGER)
+            rating = random.choice([4, 4, 4, 5, 5])  # More 4s and 5s
+            
+            # Random review text (70% chance)
+            review_text = random.choice(review_texts) if random.random() < 0.7 else None
+            
+            # Random date within last 30 days (more recent dates for "this week")
+            # 40% chance of being in last 7 days for "Popular this week"
+            if random.random() < 0.4:
+                days_ago = random.randint(0, 7)
+            else:
+                days_ago = random.randint(8, 30)
+            date_read = (datetime.date.today() - datetime.timedelta(days=days_ago)).isoformat()
+            
+            # date_logged will be set automatically to CURRENT_TIMESTAMP, but we can also set it explicitly
+            # to ensure reviews appear in "this week"
+            date_logged = (datetime.datetime.now() - datetime.timedelta(days=days_ago)).isoformat()
+            
+            db.execute('''
+                INSERT INTO Review (user_id, work_id, rating, review_text, date_read, date_logged)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (user_id, work_id, rating, review_text, date_read, date_logged))
+            reviews_added += 1
+    
+    db.commit()
+    print(f"Populated {reviews_added} reviews for {len(works)} works.")
+
 @app.cli.command('init')
 def init_db_command():
     """Command to initialize the database: `flask init`"""
     init_db()
     print('Database initialization complete.')
+    print('Run "flask populate-reviews" to add sample reviews to all works.')
+
+@app.cli.command('populate-reviews')
+def populate_reviews_command():
+    """Command to populate reviews: `flask populate-reviews`"""
+    populate_reviews()
+    print('Reviews populated successfully.')
 
 # --- User & Login Management ---
 class User(UserMixin):
@@ -312,20 +412,46 @@ def logout():
 
 @app.route('/')
 def homepage():
-    """Homepage now shows all WORKS, which is more visual (Letterboxd-style)."""
+    """Homepage shows Popular This Week based on review count."""
     db = get_db()
-    # Fetch works along with author name and author image URL
-    works = db.execute('''
+    # Fetch popular works based on review count from the last 7 days
+    popular_works = db.execute('''
         SELECT 
             Work.*, 
             Author.name_kannada as author_kannada, 
             Author.name_english as author_english,
-            Author.image_url as author_image_url
+            Author.image_url as author_image_url,
+            COUNT(CASE WHEN Review.date_logged >= datetime('now', '-7 days') THEN Review.review_id END) as review_count,
+            AVG(CASE WHEN Review.date_logged >= datetime('now', '-7 days') THEN Review.rating END) as avg_rating
         FROM Work
         JOIN Author ON Work.author_id = Author.author_id
-        ORDER BY Work.work_id DESC
+        LEFT JOIN Review ON Work.work_id = Review.work_id
+        GROUP BY Work.work_id
+        HAVING review_count > 0
+        ORDER BY review_count DESC, avg_rating DESC
+        LIMIT 12
     ''').fetchall()
-    return render_template('index.html', works=works)
+    
+    # If not enough works with recent reviews, fall back to all-time popular
+    if len(popular_works) < 6:
+        popular_works = db.execute('''
+            SELECT 
+                Work.*, 
+                Author.name_kannada as author_kannada, 
+                Author.name_english as author_english,
+                Author.image_url as author_image_url,
+                COUNT(Review.review_id) as review_count,
+                AVG(Review.rating) as avg_rating
+            FROM Work
+            JOIN Author ON Work.author_id = Author.author_id
+            LEFT JOIN Review ON Work.work_id = Review.work_id
+            GROUP BY Work.work_id
+            HAVING review_count > 0
+            ORDER BY review_count DESC, avg_rating DESC
+            LIMIT 12
+        ''').fetchall()
+    
+    return render_template('index.html', works=popular_works)
 
 @app.route('/work/<int:work_id>', methods=['GET', 'POST'])
 def work_details(work_id):
@@ -437,39 +563,138 @@ def author_details(author_id):
 # --- Auto-complete search ---
 @app.route('/search-autocomplete')
 def search_autocomplete():
-    query = request.args.get('q', '')
-    if not query:
+    query = request.args.get('q', '').strip().lower()
+    if not query or len(query) < 1:
         return jsonify([])
     
     db = get_db()
     
-    # Fetch Authors (English or Kannada name contains query)
-    authors = db.execute(
-        'SELECT author_id, name_kannada, name_english FROM Author WHERE name_kannada LIKE ? OR name_english LIKE ? LIMIT 5', 
-        (f'%{query}%', f'%{query}%')
+    # Fetch Authors (English or Kannada name contains query) - prioritize exact matches
+    authors_exact = db.execute(
+        '''SELECT author_id, name_kannada, name_english FROM Author 
+           WHERE LOWER(name_english) = ? OR LOWER(name_kannada) = ? LIMIT 3''', 
+        (query, query)
     ).fetchall()
     
-    # Fetch Works (English or Kannada title contains query)
-    works = db.execute(
-        'SELECT work_id, title_kannada, title_english FROM Work WHERE title_kannada LIKE ? OR title_english LIKE ? LIMIT 5', 
-        (f'%{query}%', f'%{query}%')
+    authors_partial = db.execute(
+        '''SELECT author_id, name_kannada, name_english FROM Author 
+           WHERE (LOWER(name_kannada) LIKE ? OR LOWER(name_english) LIKE ?)
+           AND author_id NOT IN (SELECT author_id FROM Author WHERE LOWER(name_english) = ? OR LOWER(name_kannada) = ?)
+           LIMIT 5''', 
+        (f'%{query}%', f'%{query}%', query, query)
+    ).fetchall()
+    
+    # Fetch Works (English or Kannada title contains query) - prioritize exact matches
+    works_exact = db.execute(
+        '''SELECT work_id, title_kannada, title_english FROM Work 
+           WHERE LOWER(title_english) = ? OR LOWER(title_kannada) = ? LIMIT 3''', 
+        (query, query)
+    ).fetchall()
+    
+    works_partial = db.execute(
+        '''SELECT work_id, title_kannada, title_english FROM Work 
+           WHERE (LOWER(title_kannada) LIKE ? OR LOWER(title_english) LIKE ?)
+           AND work_id NOT IN (SELECT work_id FROM Work WHERE LOWER(title_english) = ? OR LOWER(title_kannada) = ?)
+           LIMIT 7''', 
+        (f'%{query}%', f'%{query}%', query, query)
     ).fetchall()
 
     suggestions = []
-    for author in authors:
+    
+    # Add exact matches first (higher priority)
+    for author in authors_exact:
         suggestions.append({
             'label': f"Author: {author['name_english']} ({author['name_kannada']})", 
             'type': 'Author', 
-            'url': url_for('author_details', author_id=author['author_id'])
+            'url': url_for('author_details', author_id=author['author_id']),
+            'priority': 1
         })
-    for work in works:
+    
+    for work in works_exact:
         suggestions.append({
             'label': f"Work: {work['title_english']} ({work['title_kannada']})", 
             'type': 'Work', 
-            'url': url_for('work_details', work_id=work['work_id'])
+            'url': url_for('work_details', work_id=work['work_id']),
+            'priority': 1
         })
+    
+    # Add partial matches
+    for author in authors_partial:
+        suggestions.append({
+            'label': f"Author: {author['name_english']} ({author['name_kannada']})", 
+            'type': 'Author', 
+            'url': url_for('author_details', author_id=author['author_id']),
+            'priority': 2
+        })
+    
+    for work in works_partial:
+        suggestions.append({
+            'label': f"Work: {work['title_english']} ({work['title_kannada']})", 
+            'type': 'Work', 
+            'url': url_for('work_details', work_id=work['work_id']),
+            'priority': 2
+        })
+    
+    # Sort by priority, then limit to 10 results
+    suggestions.sort(key=lambda x: x.get('priority', 3))
+    suggestions = suggestions[:10]
         
     return jsonify(suggestions)
+
+# --- Search Results Page ---
+@app.route('/search')
+def search_results():
+    """Search results page showing all matching works and authors."""
+    query = request.args.get('q', '').strip()
+    
+    if not query:
+        return render_template('search_results.html', query='', works=[], authors=[])
+    
+    db = get_db()
+    
+    # Search for authors
+    authors = db.execute('''
+        SELECT author_id, name_kannada, name_english, biography, era, image_url
+        FROM Author 
+        WHERE LOWER(name_kannada) LIKE ? OR LOWER(name_english) LIKE ?
+        ORDER BY 
+            CASE 
+                WHEN LOWER(name_english) = ? OR LOWER(name_kannada) = ? THEN 1
+                WHEN LOWER(name_english) LIKE ? OR LOWER(name_kannada) LIKE ? THEN 2
+                ELSE 3
+            END,
+            name_english
+        LIMIT 20
+    ''', (f'%{query.lower()}%', f'%{query.lower()}%', query.lower(), query.lower(), f'{query.lower()}%', f'{query.lower()}%')).fetchall()
+    
+    # Search for works
+    works = db.execute('''
+        SELECT 
+            Work.*,
+            Author.name_kannada as author_kannada,
+            Author.name_english as author_english,
+            Author.image_url as author_image_url,
+            COUNT(Review.review_id) as review_count,
+            AVG(Review.rating) as avg_rating
+        FROM Work
+        JOIN Author ON Work.author_id = Author.author_id
+        LEFT JOIN Review ON Work.work_id = Review.work_id
+        WHERE LOWER(Work.title_kannada) LIKE ? OR LOWER(Work.title_english) LIKE ?
+           OR LOWER(Author.name_english) LIKE ? OR LOWER(Author.name_kannada) LIKE ?
+        GROUP BY Work.work_id
+        ORDER BY 
+            CASE 
+                WHEN LOWER(Work.title_english) = ? OR LOWER(Work.title_kannada) = ? THEN 1
+                WHEN LOWER(Work.title_english) LIKE ? OR LOWER(Work.title_kannada) LIKE ? THEN 2
+                ELSE 3
+            END,
+            review_count DESC,
+            avg_rating DESC
+        LIMIT 50
+    ''', (f'%{query.lower()}%', f'%{query.lower()}%', f'%{query.lower()}%', f'%{query.lower()}%',
+          query.lower(), query.lower(), f'{query.lower()}%', f'{query.lower()}%')).fetchall()
+    
+    return render_template('search_results.html', query=query, works=works, authors=authors)
 
 
 if __name__ == '__main__':

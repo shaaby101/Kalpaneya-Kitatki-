@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% block title %}Search Results{% if query %} - "{{ query }}"{% endif %} - Kannada Library{% endblock %}
+{% block content %}
+    <header class="main-header">
+        <h1>Search Results</h1>
+        {% if query %}
+            <p>Results for "{{ query }}"</p>
+        {% else %}
+            <p>Enter a search query to find works and authors</p>
+        {% endif %}
+    </header>
+    
+    {% if query %}
+        {% if authors or works %}
+            {% if authors %}
+                <section class="search-section">
+                    <h2>Authors ({{ authors|length }})</h2>
+                    <div class="author-grid">
+                        {% for author in authors %}
+                            <a href="{{ url_for('author_details', author_id=author.author_id) }}" class="author-card">
+                                <div class="author-info">
+                                    <h3>{{ author.name_kannada }}</h3>
+                                    <p class="author-name-english">{{ author.name_english }}</p>
+                                    {% if author.era %}
+                                        <p class="author-era">Era: {{ author.era }}</p>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+            
+            {% if works %}
+                <section class="search-section">
+                    <h2>Works ({{ works|length }})</h2>
+                    <div class="work-grid">
+                        {% for work in works %}
+                            <a href="{{ url_for('work_details', work_id=work.work_id) }}" class="work-card" role="listitem" aria-label="{{ work.title_english }}">
+                                <div class="work-poster">
+                                    {% if work.author_image_url and work.author_image_url.strip() %}
+                                        <img 
+                                            src="{{ url_for('static', filename='images/' + work.author_image_url) }}" 
+                                            alt="Portrait of {{ work.author_english }}"
+                                            loading="lazy"
+                                            onerror="this.src='https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.author_english|urlencode }}'"
+                                        >
+                                    {% elif work.cover_image_url and work.cover_image_url.strip() %}
+                                        <img 
+                                            src="{{ url_for('static', filename='images/' + work.cover_image_url) }}" 
+                                            alt="Cover for {{ work.title_english }}"
+                                            loading="lazy"
+                                        >
+                                    {% else %}
+                                        <img 
+                                            src="https://placehold.co/500x750/f5f2eb/6b6b6b?text={{ work.author_english|urlencode }}" 
+                                            alt="Portrait of {{ work.author_english }}"
+                                            loading="lazy"
+                                        >
+                                    {% endif %}
+                                </div>
+                                <div class="work-details">
+                                    <h3 class="work-title">{{ work.title_kannada }}</h3>
+                                    <p class="work-author">{{ work.author_english }}</p>
+                                    {% if work.review_count %}
+                                        <p class="work-stats">
+                                            <span class="rating">★ {{ "%.1f"|format(work.avg_rating) if work.avg_rating else "N/A" }}</span>
+                                            <span class="review-count">{{ work.review_count }} review{{ 's' if work.review_count != 1 else '' }}</span>
+                                        </p>
+                                    {% endif %}
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+        {% else %}
+            <div class="no-results">
+                <p>No results found for "{{ query }}".</p>
+                <p>Try searching with different keywords or check your spelling.</p>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}
+

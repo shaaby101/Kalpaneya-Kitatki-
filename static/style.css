@@ -70,6 +70,15 @@ html {
     font-size: 16px;
     scroll-behavior: smooth;
     color-scheme: light;
+    overflow-y: scroll; /* Always show scrollbar space to prevent layout shift */
+    scrollbar-width: none; /* Firefox - hide scrollbar */
+    -ms-overflow-style: none; /* IE and Edge - hide scrollbar */
+}
+
+/* Hide scrollbar but keep functionality - Webkit browsers */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
 
 body {
@@ -402,6 +411,24 @@ main.content {
     font-style: italic;
 }
 
+.work-stats {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-xs);
+    font-size: 0.85rem;
+}
+
+.work-stats .rating {
+    color: var(--highlight-dark);
+    font-weight: 600;
+}
+
+.work-stats .review-count {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
 /* === Page Headers === */
 .main-header,
 .work-header,
@@ -716,7 +743,107 @@ input[type="submit"]:active {
 
 .suggestion-type {
     color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 8px;
+    background-color: var(--bg-secondary);
+}
+
+.suggestion-type.author {
+    background-color: rgba(45, 90, 95, 0.1);
+    color: var(--accent-primary);
+}
+
+.suggestion-type.work {
+    background-color: rgba(212, 165, 116, 0.15);
+    color: var(--highlight-dark);
+}
+
+.autocomplete-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.autocomplete-item strong {
+    flex: 1;
+}
+
+/* === Search Form === */
+.search-form {
+    width: 100%;
+    margin: 0;
+}
+
+.search-form input {
+    margin: 0;
+}
+
+/* === Search Results Page === */
+.search-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.search-section h2 {
+    margin-bottom: var(--spacing-md);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.author-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.author-card {
+    background-color: var(--bg-card);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.author-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.author-info h3 {
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-primary);
+    font-size: 1.1rem;
+}
+
+.author-name-english {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+}
+
+.author-era {
+    color: var(--text-muted);
     font-size: 0.85rem;
+    margin-top: var(--spacing-xs);
+}
+
+.no-results {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+}
+
+.no-results p {
+    margin-bottom: var(--spacing-sm);
 }
 
 /* === Utility Classes === */
